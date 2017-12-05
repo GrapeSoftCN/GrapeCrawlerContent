@@ -30,12 +30,10 @@ public class CrawlerContent {
      * @return
      */
     public String SetInfo(String wbName, String ogName) {
-        String info = null, ogid = "", wbid = "";
+        String info = null;
+        String ogid = "", wbid = "";
         JSONObject object = JSONObject.toJSON(execRequest.getChannelValue(grapeHttpUnit.formdata).toString());
         info = object.getString("param");
-        if (!StringHelper.InvaildString(info)) {
-            return rMsg.netMSG(3, "添加数据失败");
-        }
         // 获取网站id
         wbid = getWbid(wbName);
         if (!StringHelper.InvaildString(wbid) || wbid.contains("errorcode")) {
@@ -46,33 +44,17 @@ public class CrawlerContent {
         if (!StringHelper.InvaildString(ogName) || wbid.contains("errorcode")) {
             return rMsg.netMSG(2, "无效栏目id");
         }
-        return AddContent(wbid, ogid, ogName, info);
+        return SetInfo(wbid, ogid, info);
     }
 
-    @SuppressWarnings("unchecked")
-    public String TestContent(String wbName, String ogName,String ContentInfo) {
-        String info = null, ogid = "", wbid = "";
-        JSONObject object = JSONObject.toJSON(ContentInfo);
-        if (object!=null && object.size() > 0) {
-            info = object.getString("param");
-            if (!StringHelper.InvaildString(info)) {
-                return rMsg.netMSG(3, "添加数据失败");
-            }
-            // 获取网站id
-            wbid = getWbid(wbName);
-            object.put("wbid", wbid);
-            if (!StringHelper.InvaildString(wbid) || wbid.contains("errorcode")) {
-                return rMsg.netMSG(1, "无效网站id");
-            }
-            // 获取栏目id
-            ogid = getOgid(wbid, ogName);
-            object.put("ogid", ogid);
-            if (!StringHelper.InvaildString(ogid) || wbid.contains("errorcode")) {
-                return rMsg.netMSG(2, "无效栏目id");
-            }
+    public String SetInfo(String wbName, String ogName, String info) {
+        String ogid = "", wbid = "";
+        if (!StringHelper.InvaildString(info)) {
+            return rMsg.netMSG(3, "添加数据失败");
         }
         return AddContent(wbid, ogid, ogName, info);
     }
+
     /**
      * 添加文章到数据表中
      * 
@@ -82,7 +64,7 @@ public class CrawlerContent {
      * @param ContentInfo
      * @return
      */
-    public String AddContent(String wbid, String ogid, String ogName, String ContentInfo) {
+    private String AddContent(String wbid, String ogid, String ogName, String ContentInfo) {
         String mainName = "", content = "";
         String result = rMsg.netMSG(100, "导入数据失败");
         ContentInfo = codec.DecodeFastJSON(ContentInfo);
@@ -102,9 +84,9 @@ public class CrawlerContent {
                 return result;
             }
             if (ContentIsExsist(ogid, mainName, content) == 0) { // 文章不存在，直接添加至数据库
-                JSONObject postParam = new JSONObject("param",codec.encodeFastJSON(object.toJSONString()));
+                JSONObject postParam = new JSONObject("param", codec.encodeFastJSON(object.toJSONString()));
                 appIns apps = appsProxy.getCurrentAppInfo();
-                String temp = (String) appsProxy.proxyCall("/GrapeContent/Content/AddCrawlerContent/",postParam,apps);
+                String temp = (String) appsProxy.proxyCall("/GrapeContent/Content/AddCrawlerContent/", postParam, apps);
                 if (StringHelper.InvaildString(temp) && temp.contains("errorcode")) {
                     JSONObject rjJsonObject = JSONObject.toJSON(temp);
                     if (rjJsonObject.getInt("errorcode") == 0) {
@@ -126,12 +108,14 @@ public class CrawlerContent {
      */
     private int ContentIsExsist(String ogid, String mainName, String content) {
         int code = 2; // 远程调用API错误
-        content = codec.encodebase64(content);  //base64编码
-        content = codec.EncodeHtmlTag(content);  //特殊格式编码
-        JSONObject postParam = new JSONObject("param",content);
+        content = codec.encodebase64(content); // base64编码
+        content = codec.EncodeHtmlTag(content); // 特殊格式编码
+        JSONObject postParam = new JSONObject("param", content);
         appIns apps = appsProxy.getCurrentAppInfo();
-        String temp =(String) appsProxy.proxyCall("/GrapeContent/Content/ContentIsExist/" + ogid + "/" + mainName + "/", postParam, apps);
-//        String temp = (String) appsProxy.proxyCall("/GrapeContent/Content/ContentIsExist/" + ogid + "/" + mainName + "/" + content);
+        String temp = (String) appsProxy.proxyCall("/GrapeContent/Content/ContentIsExist/" + ogid + "/" + mainName + "/", postParam, apps);
+        // String temp = (String)
+        // appsProxy.proxyCall("/GrapeContent/Content/ContentIsExist/" + ogid +
+        // "/" + mainName + "/" + content);
         if (StringHelper.InvaildString(temp)) {
             code = Integer.parseInt(temp);
         }
