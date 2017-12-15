@@ -1,7 +1,11 @@
 package interfaceApplication;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.simple.JSONObject;
 
@@ -30,7 +34,7 @@ public class CrawlerContent {
      * @return
      */
     public String SetInfo(String wbName, String ogName) {
-        String info = null;
+    	String info = null;
         String ogid = "", wbid = "";
         JSONObject object = JSONObject.toJSON(execRequest.getChannelValue(grapeHttpUnit.formdata).toString());
         info = object.getString("param");
@@ -44,15 +48,76 @@ public class CrawlerContent {
         if (!StringHelper.InvaildString(ogName) || wbid.contains("errorcode")) {
             return rMsg.netMSG(2, "无效栏目id");
         }
-        return SetInfo(wbid, ogid, info);
+        return SetInfo(wbid, ogid,wbName,ogName, info);
     }
-
-    public String SetInfo(String wbName, String ogName, String info) {
+    
+    public String SetInfo(String wbName, String ogName, String infos) {
+    	String info = null;
         String ogid = "", wbid = "";
-        if (!StringHelper.InvaildString(info)) {
-            return rMsg.netMSG(3, "添加数据失败");
+        JSONObject object = JSONObject.toJSON(execRequest.getChannelValue(grapeHttpUnit.formdata).toString());
+        info = object.getString("param");
+        // 获取网站id
+        wbid = getWbid(wbName);
+        if (!StringHelper.InvaildString(wbid) || wbid.contains("errorcode")) {
+            return rMsg.netMSG(1, "无效网站id");
         }
-        return AddContent(wbid, ogid, ogName, info);
+        // 获取栏目id
+        ogid = getOgid(wbid, ogName);
+        if (!StringHelper.InvaildString(ogName) || wbid.contains("errorcode")) {
+            return rMsg.netMSG(2, "无效栏目id");
+        }
+        return SetInfo(wbid, ogid,wbName,ogName, info);
+    }
+    
+    public String SetInfos(String wbName, String ogName,String infso) {
+        String info = null;
+        String ogid = "", wbid = "";
+        JSONObject object = JSONObject.toJSON(infso);
+        info = object.getString("param");
+        // 获取网站id
+        wbid = getWbid(wbName);
+        if (!StringHelper.InvaildString(wbid) || wbid.contains("errorcode")) {
+            return rMsg.netMSG(1, "无效网站id");
+        }
+        // 获取栏目id
+        ogid = getOgid(wbid, ogName);
+        if (!StringHelper.InvaildString(ogName) || wbid.contains("errorcode")) {
+            return rMsg.netMSG(2, "无效栏目id");
+        }
+        return SetInfo(wbid, ogid,wbName,ogName, info);
+    }
+    
+	@SuppressWarnings("unchecked")
+	public String SetInfo(String wbid,String ogid,String wbName, String ogName, String info) {
+		String tempCaption="";
+		JSONObject obj = JSONObject.toJSON(codec.DecodeFastJSON(info));
+		for(int i =0; i<25; i++){
+			JSONObject tempJson = new JSONObject();
+			String mainName = "",content = "",author="",time="",souce="";
+			tempCaption = "mainName_" + String.valueOf(i);//文章名称
+			if(obj.containsKey(tempCaption)){
+				tempJson.puts("mainName", obj.getJson(tempCaption).getString("content"));
+			}
+			tempCaption = "author_" + String.valueOf(i); //文章作者
+			if(obj.containsKey(tempCaption)){
+				tempJson.puts("author", obj.getJson(tempCaption).getString("content"));
+			}
+			tempCaption = "time_" + String.valueOf(i);//文章时间
+			if(obj.containsKey(tempCaption)){
+				tempJson.puts("time", obj.getJson(tempCaption).getString("content"));
+			}
+			tempCaption = "souce_" + String.valueOf(i);//文章来源
+			if(obj.containsKey(tempCaption)){
+				tempJson.puts("souce", obj.getJson(tempCaption).getString("content"));
+			}
+			tempCaption = "content_" + String.valueOf(i);//文章内容
+			if(obj.containsKey(tempCaption)){
+				tempJson.puts("content", obj.getJson(tempCaption).getString("content"));
+			}
+			tempJson.puts("wbid", wbid).puts("ogid", ogid);//网站id,栏目id
+			AddContent(wbid, ogid, ogName,codec.encodeFastJSON(tempJson.toJSONString()));
+		}
+        return rMsg.netMSG(0, "添加数据成功");
     }
 
     /**
@@ -69,9 +134,9 @@ public class CrawlerContent {
         String result = rMsg.netMSG(100, "导入数据失败");
         ContentInfo = codec.DecodeFastJSON(ContentInfo);
         JSONObject object = JSONObject.toJSON(ContentInfo);
-        object = ClearData(object);
+        //object = ClearData(object);
         // 获取时间及其他字段
-        object = getTime(object, ogName);
+        object = getTimeColumn(object);
         if (object != null && object.size() > 0) {
             // 验证文章是否已存在库中
             if (object.containsKey("mainName")) {
@@ -86,7 +151,8 @@ public class CrawlerContent {
             if (ContentIsExsist(ogid, mainName, content) == 0) { // 文章不存在，直接添加至数据库
                 JSONObject postParam = new JSONObject("param", codec.encodeFastJSON(object.toJSONString()));
                 appIns apps = appsProxy.getCurrentAppInfo();
-                String temp = (String) appsProxy.proxyCall("/GrapeContent/Content/AddCrawlerContent/", postParam, apps);
+                System.out.println("111");
+                String temp = (String) appsProxy.proxyCall("/GrapeContent/Content/AddCrawlerContent/12", postParam, apps);
                 if (StringHelper.InvaildString(temp) && temp.contains("errorcode")) {
                     JSONObject rjJsonObject = JSONObject.toJSON(temp);
                     if (rjJsonObject.getInt("errorcode") == 0) {
@@ -98,6 +164,77 @@ public class CrawlerContent {
         return result;
     }
 
+    /**
+     * 获取栏目时间，作者
+     * 
+     * @param object
+     * @return
+     */
+    private JSONObject getTimeColumn (JSONObject object) {
+        String data = "";
+        long times = TimeHelper.nowMillis();
+        String time = "", souce = "",author="",image="";
+        if (object != null && object.size() > 0) {
+            if (object.containsKey("time")) {
+                data = object.getString("time");
+                if(data.contains("作者")) {
+                	time = data.substring(0, 16);
+                	author = data.substring(17);
+                }else if(data.contains("发布日期")) {
+                	// 捕获发布日期
+                	 time = catchString("发布日期：", " ", data);
+                     // 捕获发布单位
+                     author = catchString("发布单位：", " ", data);
+                     // 捕获来源
+                     souce = catchString("来源：", " ", data);
+                }else {
+                	 time = data.substring(0, 16); // 发布时间
+                }
+                times = StringHelper.InvaildString(time) ? getStamp(time) : TimeHelper.nowMillis();
+            }
+            if (object.containsKey("content")) {
+            	 data = object.getString("content");
+            	 image = getImgaddress(data);
+            	 System.out.println();
+			}
+            object.puts("time", times).puts("author", author).puts("souce", souce).puts("image", image);
+        }
+        return object;
+    }
+    
+    /**
+     * @param s
+     * @return 获得图片
+     */
+    public static List<String> getImg(String s)
+    {
+        String regex;
+        List<String> list = new ArrayList<String>();
+        regex = "src=\"(.*?)\"";
+        Pattern pa = Pattern.compile(regex, Pattern.DOTALL);
+        Matcher ma = pa.matcher(s);
+        while (ma.find())
+        {
+            list.add(ma.group());
+        }
+        return list;
+    }
+    /**
+     * 返回存有图片地址
+     * @param tar
+     * @return
+     */
+    public static String getImgaddress(String tar){
+        List<String> imgList = getImg(tar);
+        String res[] = new String[imgList.size()];
+        String aa="";
+        if(imgList.size()>0){
+        	aa= imgList.get(0).substring(5);
+        	aa=aa.substring(0, aa.length()-1);
+        }
+        return aa;
+    }
+    
     /**
      * 验证文章是否已存在
      * 
@@ -112,13 +249,17 @@ public class CrawlerContent {
         content = codec.EncodeHtmlTag(content); // 特殊格式编码
         JSONObject postParam = new JSONObject("param", content);
         appIns apps = appsProxy.getCurrentAppInfo();
-        String temp = (String) appsProxy.proxyCall("/GrapeContent/Content/ContentIsExist/" + ogid + "/" + mainName + "/", postParam, apps);
-        // String temp = (String)
-        // appsProxy.proxyCall("/GrapeContent/Content/ContentIsExist/" + ogid +
-        // "/" + mainName + "/" + content);
-        if (StringHelper.InvaildString(temp)) {
-            code = Integer.parseInt(temp);
-        }
+        if (mainName.contains("%")) {
+        	return code =1;
+		}else {
+			String temp = (String) appsProxy.proxyCall("/GrapeContent/Content/ContentIsExist/" + ogid + "/" + mainName + "/", postParam, apps);
+	        // String temp = (String)
+	        // appsProxy.proxyCall("/GrapeContent/Content/ContentIsExist/" + ogid +
+	        // "/" + mainName + "/" + content);
+	        if (StringHelper.InvaildString(temp)) {
+	            code = Integer.parseInt(temp);
+	        }
+		}
         return code;
     }
 
@@ -186,6 +327,7 @@ public class CrawlerContent {
         // object = getTimeByzcfg(object); // 获取警示案例时间，来源
         // break;
         case "工作动态": // 铜官区五务公开-居务公开-工作动态
+        	
             object = getTimeByJwgk(object); // 获取铜官区五务公开-居务公开-工作动态时间，来源
             break;
         }
