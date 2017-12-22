@@ -28,6 +28,6 @@
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="D:/运维测试/软件/t12.0475.jar" sourcepath="C:/Users/win7/Downloads/JGrapeFW-master"/>
+	<classpathentry kind="lib" path="C:/Users/win7/Desktop/GrapeFW/Test_2017-10-27/sdk/t12.0481.jar" sourcepath="C:/Users/win7/Downloads/JGrapeFW-master"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
