@@ -38,17 +38,19 @@ public class CrawlerContent {
         String ogid = "", wbid = "";
         JSONObject object = JSONObject.toJSON(execRequest.getChannelValue(grapeHttpUnit.formdata).toString());
         info = object.getString("param");
-        // 获取网站id
-        wbid = getWbid(wbName);
-        if (!StringHelper.InvaildString(wbid) || wbid.contains("errorcode")) {
-            return rMsg.netMSG(1, "无效网站id");
-        }
-        // 获取栏目id
-        ogid = getOgid(wbid, ogName);
-        if (!StringHelper.InvaildString(ogid) || wbid.contains("errorcode")) {
-            return rMsg.netMSG(2, "无效栏目id");
-        }
-        return SetInfo(wbid, ogid, info);
+        // // 获取网站id
+        // wbid = getWbid(wbName);
+        // if (!StringHelper.InvaildString(wbid) || wbid.contains("errorcode"))
+        // {
+        // return rMsg.netMSG(1, "无效网站id");
+        // }
+        // // 获取栏目id
+        // ogid = getOgid(wbid, ogName);
+        // if (!StringHelper.InvaildString(ogid) || wbid.contains("errorcode"))
+        // {
+        // return rMsg.netMSG(2, "无效栏目id");
+        // }
+        return SetInfo(wbName, ogName, info);
     }
 
     /**
@@ -284,7 +286,31 @@ public class CrawlerContent {
                     author = catchString("作者：", " ", data);
                     // 捕获来源
                     souce = catchString("来源：", " ", data);
-                } else {
+                } else if (data.contains("发布时间")) {
+                    // 捕获发布日期
+                    time = catchString("发布时间：", " ", data).trim().replaceAll("\\u00A0", "");
+                    // 捕获发布单位
+                    author = catchString("编辑：", " ", data);
+                    // 捕获来源
+                    souce = catchString("信息来源：", " ", data);
+                } else if (data.contains("时间")) {
+                    // 捕获发布日期
+                    time = catchString("时间：", "来源：", data).trim().replaceAll("\\u00A0", "");
+                    // 捕获发布单位
+                    author = catchString("编辑：", " ", data);
+                    // 捕获来源
+                    souce = catchString("来源：", " ", data);
+                } else if (data.contains("编辑日期")) {
+                    // 捕获发布日期
+                    time = catchString("编辑日期：", " ", data).trim().replaceAll("\\u00A0", "");
+                    // 捕获发布单位
+                    author = catchString("作者：", " ", data);
+                }  else if (data.contains("日期")) {
+                    // 捕获发布日期
+                    time = catchString("日期 :", " ", data).trim().replaceAll("\\u00A0", "");
+                    // 捕获发布单位
+                    author = catchString("发布者：", " ", data);
+                }else {
                     time = data.trim().replaceAll("\\u00A0", ""); // 发布时间
                 }
                 times = StringHelper.InvaildString(time) ? getStamp(time) : TimeHelper.nowMillis();
