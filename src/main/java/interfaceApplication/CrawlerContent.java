@@ -45,7 +45,7 @@ public class CrawlerContent {
         }
         // 获取栏目id
         ogid = getOgid(wbid, ogName);
-        if (!StringHelper.InvaildString(ogName) || wbid.contains("errorcode")) {
+        if (!StringHelper.InvaildString(ogid) || wbid.contains("errorcode")) {
             return rMsg.netMSG(2, "无效栏目id");
         }
         return SetInfo(wbid, ogid, info);
@@ -59,10 +59,21 @@ public class CrawlerContent {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public String SetInfo(String wbid, String ogid, String info) {
+    public String SetInfo(String wbName, String ogName, String info) {
         String url = "";
+        String ogid = "", wbid = "";
         String result = rMsg.netMSG(0, "添加成功");
         JSONObject tempJson;
+        // 获取网站id
+        wbid = getWbid(wbName);
+        if (!StringHelper.InvaildString(wbid) || wbid.contains("errorcode")) {
+            return rMsg.netMSG(1, "无效网站id");
+        }
+        // 获取栏目id
+        ogid = getOgid(wbid, ogName);
+        if (!StringHelper.InvaildString(ogid) || wbid.contains("errorcode")) {
+            return rMsg.netMSG(2, "无效栏目id");
+        }
         JSONObject ArticleInfo = getArticle(info); // 获取封装后的文章数据
         if (ArticleInfo != null && ArticleInfo.size() > 0) {
             for (Object obj : ArticleInfo.keySet()) {
@@ -70,7 +81,7 @@ public class CrawlerContent {
                 tempJson = ArticleInfo.getJson(url);
                 tempJson.put("url", url);
                 tempJson.puts("wbid", wbid).puts("ogid", ogid);// 网站id,栏目id
-                result = AddContent(wbid, ogid, codec.encodeFastJSON(tempJson.toJSONString()));
+                result = AddContent(wbid, ogid, tempJson.toJSONString());
                 System.out.println("tips: " + result);
             }
         } else {
@@ -157,7 +168,7 @@ public class CrawlerContent {
         int type = 1; // 0： 正常文章，1：外链文章
         String mainName = "", content = "", distinguish = "", contenturl = "";
         String result = rMsg.netMSG(100, "导入数据失败");
-        ContentInfo = codec.DecodeFastJSON(ContentInfo);
+        // ContentInfo = codec.DecodeFastJSON(ContentInfo);
         JSONObject object = JSONObject.toJSON(ContentInfo);
         // object = ClearData(object);
         // 获取时间及其他字段
@@ -677,9 +688,12 @@ public class CrawlerContent {
     private String getOgid(String wbid, String ogid) {
         String result = ogid;
         if (StringHelper.InvaildString(ogid)) {
-            if (checkHelper.checkChinese(ogid)) { // 判断wbid是否为纯中文,即栏目名称
-                result = (String) appsProxy.proxyCall("/GrapeContent/ContentGroup/getOgidByName/" + wbid + "/" + ogid);
-            }
+            // if (checkHelper.checkChinese(ogid)) { // 判断ogid是否为纯中文,即栏目名称
+            // result = (String)
+            // appsProxy.proxyCall("/GrapeContent/ContentGroup/getOgidByName/" +
+            // wbid + "/" + ogid);
+            // }
+            result = (String) appsProxy.proxyCall("/GrapeContent/ContentGroup/getOgidByName/" + wbid + "/" + ogid);
             if (!StringHelper.InvaildString(result)) {
                 return rMsg.netMSG(1, "无效栏目id");
             }
