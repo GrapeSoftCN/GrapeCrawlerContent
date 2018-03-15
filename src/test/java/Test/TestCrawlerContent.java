@@ -1,8 +1,7 @@
 package Test;
 
-import httpServer.booter;
-import nlogger.nlogger;
-import security.codec;
+import common.java.httpServer.booter;
+import common.java.nlogger.nlogger;
 
 public class TestCrawlerContent {
     public static void main(String[] args) {
@@ -10,7 +9,7 @@ public class TestCrawlerContent {
         try {
             System.out.println("GrapeCrawlerContent");
             System.setProperty("AppName", "GrapeCrawlerContent");
-            booter.start(1008);
+            booter.start(1006);
         } catch (Exception e) {
             nlogger.logout(e);
         }

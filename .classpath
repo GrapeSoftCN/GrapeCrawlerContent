@@ -28,6 +28,7 @@
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/Users/win7/Desktop/GrapeFW/Test_2017-10-27/sdk/t12.0481.jar" sourcepath="C:/Users/win7/Downloads/JGrapeFW-master"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/5"/>
+	<classpathentry kind="lib" path="D:/ckd/1006.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
